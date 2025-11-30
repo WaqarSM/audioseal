@@ -68,7 +68,7 @@ def download_audio(url):
     """
     # Try to detect format from URL extension
     ext = get_file_extension_from_url(url)
-    
+
     # Use format-agnostic temp file (no extension) to let torchaudio auto-detect
     # Or use detected extension if available
     suffix = f'.{ext}' if ext else ''
@@ -80,7 +80,7 @@ def download_audio(url):
         except Exception as e:
             os.unlink(tmp_path)
             raise Exception(f"Failed to download audio from URL: {str(e)}")
-    
+
     try:
         # Let torchaudio auto-detect format (format=None)
         # This works for WAV, FLAC, and other formats if backends are available
@@ -105,12 +105,12 @@ def download_audio(url):
 def plot_waveform_and_specgram(waveform, sample_rate, title):
     """Create plot and return as base64 encoded image."""
     waveform = waveform.squeeze().detach().cpu().numpy()
-    
+
     num_frames = waveform.shape[-1]
     time_axis = torch.arange(0, num_frames) / sample_rate
-    
+
     figure, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
-    
+
     ax1.plot(time_axis, waveform, linewidth=1)
     ax1.grid(True)
     ax1.set_xlabel('Time (s)')
@@ -118,16 +118,16 @@ def plot_waveform_and_specgram(waveform, sample_rate, title):
     ax2.specgram(waveform, Fs=sample_rate)
     ax2.set_xlabel('Time (s)')
     ax2.set_ylabel('Frequency (Hz)')
-    
+
     figure.suptitle(f"{title} - Waveform and specgram")
     plt.tight_layout()
-    
+
     # Convert plot to base64
     img_buffer = io.BytesIO()
     plt.savefig(img_buffer, format='png', dpi=100, bbox_inches='tight')
     img_buffer.seek(0)
     plt.close()
-    
+
     img_base64 = base64.b64encode(img_buffer.read()).decode('utf-8')
     return img_base64
 
@@ -135,7 +135,7 @@ def plot_waveform_and_specgram(waveform, sample_rate, title):
 def save_audio_tensor(audio_tensor, sample_rate, output_path, format='wav'):
     """
     Save audio tensor to file.
-    
+
     Args:
         audio_tensor: Audio tensor to save
         sample_rate: Sample rate of the audio
@@ -157,7 +157,7 @@ def save_audio_tensor(audio_tensor, sample_rate, output_path, format='wav'):
 def watermark_audio():
     """
     Watermark audio with secret message.
-    
+
     Expected JSON:
     {
         "audio_url": "https://example.com/audio.wav",
@@ -170,12 +170,12 @@ def watermark_audio():
         data = request.get_json()
         if not data or 'audio_url' not in data:
             return jsonify({'error': 'Missing audio_url parameter'}), 400
-        
+
         audio_url = data['audio_url']
         message = data.get('message')
         alpha = data.get('alpha', 1.0)
         output_format = data.get('output_format', 'wav').lower()
-        
+
         # Validate output format
         supported_formats = ['wav', 'flac']
         if output_format not in supported_formats:
@@ -183,11 +183,11 @@ def watermark_audio():
                 'error': f'Unsupported output format: {output_format}',
                 'supported_formats': supported_formats
             }), 400
-        
+
         # Download and load audio
         audio, sr = download_audio(audio_url)
         audios = audio.unsqueeze(0)  # Add batch dimension
-        
+
         # Prepare message if provided
         if message:
             if len(message) != 16:
@@ -196,27 +196,27 @@ def watermark_audio():
             watermarked_audio = generator(audios, sample_rate=sr, message=secret_message, alpha=alpha)
         else:
             watermarked_audio = generator(audios, sample_rate=sr, alpha=alpha)
-        
+
         # Save watermarked audio to temporary file with appropriate extension
         suffix = f'.{output_format}'
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
             output_path = tmp_file.name
             save_audio_tensor(watermarked_audio.squeeze(0), sr, output_path, format=output_format)
-        
+
         # Set appropriate mimetype
         mimetypes = {
             'wav': 'audio/wav',
             'flac': 'audio/flac'
         }
         mimetype = mimetypes.get(output_format, 'audio/wav')
-        
+
         return send_file(
             output_path,
             mimetype=mimetype,
             as_attachment=True,
             download_name=f'watermarked_audio.{output_format}'
         )
-    
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -225,7 +225,7 @@ def watermark_audio():
 def detect_watermark():
     """
     Detect watermark in audio.
-    
+
     Expected JSON:
     {
         "audio_url": "https://example.com/audio.wav",
@@ -236,32 +236,32 @@ def detect_watermark():
         data = request.get_json()
         if not data or 'audio_url' not in data:
             return jsonify({'error': 'Missing audio_url parameter'}), 400
-        
+
         audio_url = data['audio_url']
         message_threshold = data.get('message_threshold', 0.5)
-        
+
         # Download and load audio
         audio, sr = download_audio(audio_url)
         audios = audio.unsqueeze(0)  # Add batch dimension
-        
+
         # Detect watermark
         result, message = detector.detect_watermark(
             audios.to(device),
             sample_rate=sr,
             message_threshold=message_threshold
         )
-        
+
         # Convert message tensor to list
         message_list = message.squeeze().detach().cpu().tolist()
         if isinstance(message_list, float):
             message_list = [message_list]
-        
+
         return jsonify({
             'is_watermarked': bool(result > message_threshold),
             'detection_probability': float(result),
             'decoded_message': message_list
         })
-    
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -269,7 +269,7 @@ def detect_watermark():
 def test_waveform_and_specgram():
     """
     Generate waveform and spectrogram plot for an audio file.
-    
+
     Expected JSON:
     {
         "audio_url": "https://example.com/audio.wav",
@@ -280,27 +280,27 @@ def test_waveform_and_specgram():
         data = request.get_json()
         if not data or 'audio_url' not in data:
             return jsonify({'error': 'Missing audio_url parameter'}), 400
-        
+
         audio_url = data['audio_url']
         title = data.get('title', 'Audio')
-        
+
         # Download and load audio
         audio, sr = download_audio(audio_url)
-        
+
         # Generate plot
         plot_base64 = plot_waveform_and_specgram(
             audio,
             sample_rate=sr,
             title=title
         )
-        
+
         return jsonify({
             'plot': plot_base64,
             'sample_rate': int(sr),
             'duration': float(audio.shape[-1] / sr),
             'title': title
         })
-    
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -309,7 +309,7 @@ def test_waveform_and_specgram():
 def test_waveform_and_specgram_difference():
     """
     Generate waveform and spectrogram difference plot comparing two audio files.
-    
+
     Expected JSON:
     {
         "audio_url_1": "https://example.com/audio1.wav",
@@ -322,16 +322,16 @@ def test_waveform_and_specgram_difference():
         data = request.get_json()
         if not data or 'audio_url_1' not in data or 'audio_url_2' not in data:
             return jsonify({'error': 'Missing audio_url_1 or audio_url_2 parameter'}), 400
-        
+
         audio_url_1 = data['audio_url_1']
         audio_url_2 = data['audio_url_2']
         title_1 = data.get('title_1', 'Audio 1')
         title_2 = data.get('title_2', 'Audio 2')
-        
+
         # Download and load both audio files
         audio1, sr1 = download_audio(audio_url_1)
         audio2, sr2 = download_audio(audio_url_2)
-        
+
         # Ensure same sample rate (resample if needed)
         if sr1 != sr2:
             if sr1 > sr2:
@@ -342,26 +342,26 @@ def test_waveform_and_specgram_difference():
                 sr = sr2
         else:
             sr = sr1
-        
+
         # Ensure same length (pad or trim to shorter length)
         min_len = min(audio1.shape[-1], audio2.shape[-1])
         audio1 = audio1[..., :min_len]
         audio2 = audio2[..., :min_len]
-        
+
         # Calculate difference
         audio_diff = audio1 - audio2
-        
+
         # Convert to numpy for plotting
         audio1_np = audio1.squeeze().detach().cpu().numpy()
         audio2_np = audio2.squeeze().detach().cpu().numpy()
         audio_diff_np = audio_diff.squeeze().detach().cpu().numpy()
-        
+
         num_frames = audio1_np.shape[-1]
         time_axis = torch.arange(0, num_frames) / sr
-        
+
         # Create comparison plot with 3 rows: audio1, audio2, difference
         figure, axes = plt.subplots(3, 2, figsize=(14, 10))
-        
+
         # Row 1: Audio 1
         axes[0, 0].plot(time_axis, audio1_np, linewidth=1)
         axes[0, 0].grid(True)
@@ -372,7 +372,7 @@ def test_waveform_and_specgram_difference():
         axes[0, 1].set_xlabel('Time (s)')
         axes[0, 1].set_ylabel('Frequency (Hz)')
         axes[0, 1].set_title(f'{title_1} - Spectrogram')
-        
+
         # Row 2: Audio 2
         axes[1, 0].plot(time_axis, audio2_np, linewidth=1)
         axes[1, 0].grid(True)
@@ -383,7 +383,7 @@ def test_waveform_and_specgram_difference():
         axes[1, 1].set_xlabel('Time (s)')
         axes[1, 1].set_ylabel('Frequency (Hz)')
         axes[1, 1].set_title(f'{title_2} - Spectrogram')
-        
+
         # Row 3: Difference
         axes[2, 0].plot(time_axis, audio_diff_np, linewidth=1, color='red')
         axes[2, 0].grid(True)
@@ -394,23 +394,23 @@ def test_waveform_and_specgram_difference():
         axes[2, 1].set_xlabel('Time (s)')
         axes[2, 1].set_ylabel('Frequency (Hz)')
         axes[2, 1].set_title('Difference - Spectrogram')
-        
+
         figure.suptitle(f'Comparison: {title_1} vs {title_2}', fontsize=14)
         plt.tight_layout()
-        
+
         # Convert plot to base64
         img_buffer = io.BytesIO()
         plt.savefig(img_buffer, format='png', dpi=100, bbox_inches='tight')
         img_buffer.seek(0)
         plt.close()
-        
+
         img_base64 = base64.b64encode(img_buffer.read()).decode('utf-8')
-        
+
         # Calculate statistics
         max_diff = float(torch.max(torch.abs(audio_diff)).item())
         mean_diff = float(torch.mean(torch.abs(audio_diff)).item())
         rms_diff = float(torch.sqrt(torch.mean(audio_diff ** 2)).item())
-        
+
         return jsonify({
             'plot': img_base64,
             'sample_rate': int(sr),
@@ -423,7 +423,7 @@ def test_waveform_and_specgram_difference():
             'audio1_title': title_1,
             'audio2_title': title_2
         })
-    
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -431,7 +431,7 @@ def test_waveform_and_specgram_difference():
 def test_pink_noise():
     """
     Test watermark detection against pink noise attack.
-    
+
     Expected JSON:
     {
         "audio_url": "https://example.com/audio.wav",
@@ -442,35 +442,35 @@ def test_pink_noise():
         data = request.get_json()
         if not data or 'audio_url' not in data:
             return jsonify({'error': 'Missing audio_url parameter'}), 400
-        
+
         audio_url = data['audio_url']
         noise_std = data.get('noise_std', 0.1)
-        
+
         # Download and load audio
         audio, sr = download_audio(audio_url)
         audios = audio.unsqueeze(0)  # Add batch dimension
-        
+
         # Apply pink noise attack
         pink_noised_audio = af.pink_noise(audios, noise_std=noise_std)
-        
+
         # Detect watermark
         result, message = detector.detect_watermark(
             pink_noised_audio.to(device),
             sample_rate=sr
         )
-        
+
         # Generate plot
         plot_base64 = plot_waveform_and_specgram(
             pink_noised_audio.squeeze(),
             sample_rate=sr,
             title="Audio with pink noise"
         )
-        
+
         # Convert message tensor to list
         message_list = message.squeeze().detach().cpu().tolist()
         if isinstance(message_list, float):
             message_list = [message_list]
-        
+
         return jsonify({
             'detection_probability': float(result),
             'is_watermarked': bool(result > 0.5),
@@ -478,7 +478,7 @@ def test_pink_noise():
             'plot': plot_base64,
             'noise_std': noise_std
         })
-    
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -487,7 +487,7 @@ def test_pink_noise():
 def test_filters():
     """
     Test watermark detection against highpass and lowpass filters.
-    
+
     Expected JSON:
     {
         "audio_url": "https://example.com/audio.wav",
@@ -499,19 +499,19 @@ def test_filters():
         data = request.get_json()
         if not data or 'audio_url' not in data:
             return jsonify({'error': 'Missing audio_url parameter'}), 400
-        
+
         audio_url = data['audio_url']
         cutoff_freq = data.get('cutoff_freq', 5000)
-        
+
         # Download and load audio
         audio, sr = download_audio(audio_url)
         audios = audio.unsqueeze(0)  # Add batch dimension
-        
+
         # Use provided sample_rate or detected one
         sample_rate = data.get('sample_rate', sr)
-        
+
         results = {}
-        
+
         # Test highpass filter
         highpass_filtered = af.highpass_filter(
             audios,
@@ -527,11 +527,11 @@ def test_filters():
             sample_rate=sample_rate,
             title="Audio with highpass filter"
         )
-        
+
         message_highpass_list = message_highpass.squeeze().detach().cpu().tolist()
         if isinstance(message_highpass_list, float):
             message_highpass_list = [message_highpass_list]
-        
+
         results['highpass'] = {
             'detection_probability': float(result_highpass),
             'is_watermarked': bool(result_highpass > 0.5),
@@ -539,7 +539,7 @@ def test_filters():
             'plot': plot_highpass,
             'cutoff_freq': cutoff_freq
         }
-        
+
         # Test lowpass filter
         lowpass_filtered = af.lowpass_filter(
             audios,
@@ -555,11 +555,11 @@ def test_filters():
             sample_rate=sample_rate,
             title="Audio with lowpass filter"
         )
-        
+
         message_lowpass_list = message_lowpass.squeeze().detach().cpu().tolist()
         if isinstance(message_lowpass_list, float):
             message_lowpass_list = [message_lowpass_list]
-        
+
         results['lowpass'] = {
             'detection_probability': float(result_lowpass),
             'is_watermarked': bool(result_lowpass > 0.5),
@@ -567,9 +567,9 @@ def test_filters():
             'plot': plot_lowpass,
             'cutoff_freq': cutoff_freq
         }
-        
+
         return jsonify(results)
-    
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -581,12 +581,12 @@ def health():
     Returns server status, device info, and available audio backends.
     """
     available_backends = torchaudio.list_audio_backends()
-    
+
     # Determine supported formats based on backends
     supported_formats = ['WAV', 'FLAC']  # Always supported with soundfile
     if 'sox' in available_backends or 'ffmpeg' in available_backends:
         supported_formats.extend(['MP3', 'AAC', 'M4A', 'OPUS'])
-    
+
     return jsonify({
         'status': 'healthy',
         'device': str(device),
