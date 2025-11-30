@@ -2,7 +2,7 @@
 
 REST API server for AudioSeal watermarking system.
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
 # Install dependencies
@@ -14,7 +14,7 @@ python server.py
 # Server runs on http://0.0.0.0:5001
 ```
 
-## 📋 Requirements
+## Requirements
 
 ### Core Dependencies
 - Python >= 3.8
@@ -27,11 +27,11 @@ python server.py
 
 The server supports different audio formats depending on installed backends:
 
-#### ✅ Always Available (with `soundfile`):
+#### Always Available (with `soundfile`):
 - **WAV** - Full support (input & output)
 - **FLAC** - Full support (input & output)
 
-#### ⚠️ Requires Additional Backends:
+#### Requires Additional Backends:
 - **MP3** - Requires `sox` or `ffmpeg` backend
 - **AAC/M4A** - Requires `ffmpeg` backend
 - **OPUS** - Requires `ffmpeg` backend
@@ -74,18 +74,18 @@ Or use the health endpoint:
 curl http://localhost:5001/health | jq
 ```
 
-## 🎵 Audio Format Support
+## Audio Format Support
 
 ### Input Formats
-- **WAV**: ✅ Always supported
-- **FLAC**: ✅ Always supported
-- **MP3**: ✅ If `sox` or `ffmpeg` backend installed
-- **AAC/M4A**: ✅ If `ffmpeg` backend installed
-- **Any sample rate**: ✅ Automatically resampled to 16kHz for processing
+- **WAV**: Always supported
+- **FLAC**: Always supported
+- **MP3**: If `sox` or `ffmpeg` backend installed
+- **AAC/M4A**: If `ffmpeg` backend installed
+- **Any sample rate**: Automatically resampled to 16kHz for processing
 
 ### Output Formats
-- **WAV**: ✅ Default format
-- **FLAC**: ✅ Supported (specify `"output_format": "flac"`)
+- **WAV**: Default format
+- **FLAC**: Supported (specify `"output_format": "flac"`)
 
 ### Example Usage
 
@@ -109,7 +109,7 @@ curl -X POST http://localhost:5001/watermark \
   --output watermarked.flac
 ```
 
-## 📡 API Endpoints
+## API Endpoints
 
 See [SERVER_OVERVIEW.md](./SERVER_OVERVIEW.md) for complete API documentation.
 
@@ -120,29 +120,29 @@ See [SERVER_OVERVIEW.md](./SERVER_OVERVIEW.md) for complete API documentation.
 - `POST /test/filters` - Test robustness against filters
 - `GET /health` - Health check and backend info
 
-## 🔧 Recent Improvements
+## Recent Improvements
 
-### ✅ Format Detection Fix
+### Format Detection Fix
 - Removed hardcoded `.wav` extension requirement
 - Auto-detects format from URL or file content
 - Supports WAV, FLAC, MP3, AAC, and other formats
 
-### ✅ Output Format Selection
+### Output Format Selection
 - Added `output_format` parameter to `/watermark` endpoint
 - Supports WAV and FLAC output formats
 - Defaults to WAV for backward compatibility
 
-### ✅ Better Error Messages
+### Better Error Messages
 - Clear error messages for unsupported formats
 - Lists available backends in error responses
 - Helpful guidance on installing missing backends
 
-### ✅ Enhanced Health Endpoint
+### Enhanced Health Endpoint
 - Shows available audio backends
 - Lists supported input/output formats
 - Useful for debugging format support issues
 
-## 🧪 Testing
+## Testing
 
 Run the test suite:
 ```bash
@@ -154,7 +154,7 @@ Test with custom audio:
 python test_endpoints.py --audio-url https://example.com/test.mp3
 ```
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### "Failed to load audio file" Error
 
@@ -200,14 +200,14 @@ python test_endpoints.py --audio-url https://example.com/test.mp3
 
 No action needed - this is automatic!
 
-## 📚 Additional Documentation
+## Additional Documentation
 
 - [SERVER_OVERVIEW.md](./SERVER_OVERVIEW.md) - Complete API documentation
 - [FORMAT_SUPPORT.md](./FORMAT_SUPPORT.md) - Detailed format support information
 
-## 🔐 Security Notes
+## Security Notes
 
-⚠️ **This server is for development/testing**. For production:
+**This server is for development/testing**. For production:
 - Add authentication
 - Implement rate limiting
 - Disable debug mode

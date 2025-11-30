@@ -1,21 +1,21 @@
 # AudioSeal Format & Sample Rate Support
 
-## 📊 Summary
+## Summary
 
 | Feature | Support | Notes |
 |---------|---------|-------|
-| **44.1kHz Sample Rate** | ✅ **YES** | Auto-resampled to 16kHz for processing, then back to original |
-| **Multiple Sample Rates** | ✅ **YES** | Any sample rate supported (auto-resampling) |
-| **WAV Format** | ✅ **YES** | Full support (input & output) |
-| **FLAC Format** | ✅ **YES** | Supported via `soundfile` backend (input only) |
-| **MP3 Format** | ⚠️ **CONDITIONAL** | Depends on torchaudio backend (input only) |
-| **AAC Format** | ⚠️ **CONDITIONAL** | Depends on torchaudio backend (input only) |
-| **Multiple Bitrates** | ✅ **YES** | Works with any bitrate (models process raw waveforms) |
-| **Output Formats** | ❌ **WAV ONLY** | Currently hardcoded to WAV output |
+| **44.1kHz Sample Rate** |  **YES** | Auto-resampled to 16kHz for processing, then back to original |
+| **Multiple Sample Rates** |  **YES** | Any sample rate supported (auto-resampling) |
+| **WAV Format** |  **YES** | Full support (input & output) |
+| **FLAC Format** |  **YES** | Supported via `soundfile` backend (input only) |
+| **MP3 Format** |  **CONDITIONAL** | Depends on torchaudio backend (input only) |
+| **AAC Format** |  **CONDITIONAL** | Depends on torchaudio backend (input only) |
+| **Multiple Bitrates** |  **YES** | Works with any bitrate (models process raw waveforms) |
+| **Output Formats** |  **WAV ONLY** | Currently hardcoded to WAV output |
 
 ---
 
-## 🎵 Sample Rate Support
+## Sample Rate Support
 
 ### How It Works
 
@@ -46,25 +46,25 @@ if sample_rate != 16000:
 
 ### Supported Sample Rates
 
-✅ **Any sample rate** - The resampling is automatic and transparent:
+ **Any sample rate** - The resampling is automatic and transparent:
 - 8kHz, 16kHz, 22.05kHz, 24kHz, 32kHz, 44.1kHz, 48kHz, 96kHz, etc.
 
 **Note**: The server preserves the original sample rate in the output.
 
 ---
 
-## 🎧 Audio Format Support
+## Audio Format Support
 
 ### Input Formats (via torchaudio)
 
 The server uses `torchaudio.load()` which supports multiple formats depending on installed backends:
 
-#### ✅ **Always Supported** (with `soundfile` in requirements.txt):
+#### **Always Supported** (with `soundfile` in requirements.txt):
 - **WAV** - Full support
 - **FLAC** - Full support
 - **OGG/VORBIS** - Supported
 
-#### ⚠️ **Conditionally Supported** (requires additional backends):
+#### **Conditionally Supported** (requires additional backends):
 - **MP3** - Requires `sox` or `ffmpeg` backend
   - Install: `pip install sox` or ensure `ffmpeg` is in PATH
 - **AAC** - Requires `ffmpeg` backend
@@ -94,9 +94,9 @@ with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
 
 ---
 
-## 💾 Output Format Support
+## Output Format Support
 
-### Current Status: **WAV ONLY** ❌
+### Current Status: **WAV ONLY** 
 
 The server currently hardcodes WAV output:
 
@@ -142,7 +142,7 @@ mimetypes = {
 
 ---
 
-## 🎚️ Bitrate Support
+## Bitrate Support
 
 ### How Bitrates Work
 
@@ -159,14 +159,14 @@ AudioSeal works on **raw audio waveforms**, not compressed formats. Bitrate is o
 
 ### Bitrate Examples
 
-✅ **Supported** (as input):
+ **Supported** (as input):
 - MP3 @ 128kbps, 192kbps, 256kbps, 320kbps
 - AAC @ 128kbps, 192kbps, 256kbps
 - Any bitrate - models don't care, they work on decoded waveforms
 
 ---
 
-## 🔧 Testing Format Support
+## Testing Format Support
 
 ### Test Different Formats
 
@@ -199,7 +199,7 @@ print(torchaudio.list_audio_backends())
 
 ---
 
-## 📝 Recommendations for Server Enhancement
+## Recommendations for Server Enhancement
 
 ### 1. **Fix Format Detection** (High Priority)
 
@@ -251,22 +251,22 @@ Update README to explain:
 
 ---
 
-## 🎯 Current Server Capabilities
+## Current Server Capabilities
 
-### ✅ What Works Now:
+### What Works Now:
 - **Input**: WAV, FLAC (and potentially MP3/AAC if backends installed)
 - **Sample Rates**: Any (auto-resampled)
 - **Output**: WAV only
 - **Bitrates**: All (for compressed inputs)
 
-### ❌ What Doesn't Work:
+### What Doesn't Work:
 - **Output formats**: Only WAV
 - **Format detection**: May fail for non-WAV files due to temp file naming
 - **Error messages**: May be unclear for unsupported formats
 
 ---
 
-## 🔗 Related Code Locations
+## Related Code Locations
 
 - **Sample rate handling**: `src/audioseal/models.py` (lines 107-131, 228-229)
 - **Audio loading**: `server/server.py` (line 66)
@@ -275,7 +275,7 @@ Update README to explain:
 
 ---
 
-## 📚 References
+## References
 
 - [torchaudio.load() documentation](https://pytorch.org/audio/stable/backend.html)
 - [AudioSeal README](README.md) - mentions 16kHz requirement

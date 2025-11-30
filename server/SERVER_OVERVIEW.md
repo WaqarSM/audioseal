@@ -1,13 +1,13 @@
 # AudioSeal Flask Server - Overview
 
-## 🎯 Purpose
+## Purpose
 This Flask server provides a REST API for the AudioSeal watermarking system, allowing you to:
 - Watermark audio files with secret messages
 - Detect watermarks in audio files
 - Test watermark robustness against various attacks
 - Visualize audio waveforms and spectrograms
 
-## 🏗️ Architecture
+## Architecture
 
 ### Core Components
 
@@ -27,7 +27,7 @@ This Flask server provides a REST API for the AudioSeal watermarking system, all
    - Converts stereo to mono automatically
    - Handles temporary file cleanup
 
-## 📡 API Endpoints
+## API Endpoints
 
 ### 1. `POST /watermark`
 **Purpose**: Embed a watermark into an audio file
@@ -227,7 +227,7 @@ This Flask server provides a REST API for the AudioSeal watermarking system, all
 
 ---
 
-## 🔧 Helper Functions
+## Helper Functions
 
 ### `download_audio(url)`
 - Downloads audio from HTTP/HTTPS URLs or reads from `file://` URLs
@@ -244,7 +244,7 @@ This Flask server provides a REST API for the AudioSeal watermarking system, all
 - Saves PyTorch audio tensor to WAV file
 - Uses torchaudio for saving
 
-## 🧪 Testing
+## Testing
 
 The `test_endpoints.py` script provides comprehensive testing:
 
@@ -270,7 +270,7 @@ python server/test_endpoints.py --base-url http://localhost:5001 --audio-url htt
 - Saved to `test_results/YYYYMMDD_HHMMSS/`
 - Includes plots, audio files, and JSON summary
 
-## 🚀 Running the Server
+## Running the Server
 
 ```bash
 # Start the server
@@ -303,13 +303,13 @@ Key dependencies (from `requirements.txt`):
 5. **Base64 Encoding**: Plots are encoded as base64 strings for JSON responses
 6. **Audio Format**: Supports multiple input formats (WAV, FLAC, MP3, AAC with proper backends), outputs WAV only
 
-## 🎵 Audio Format & Sample Rate Support
+## Audio Format & Sample Rate Support
 
 ### Quick Summary:
-- ✅ **Sample Rates**: Any sample rate supported (44.1kHz, 48kHz, etc.) - automatically resampled to 16kHz for processing
-- ✅ **Input Formats**: WAV, FLAC (always), MP3/AAC (if backends installed)
-- ✅ **Bitrates**: All bitrates supported (models work on decoded waveforms)
-- ❌ **Output Format**: WAV only (currently)
+-  **Sample Rates**: Any sample rate supported (44.1kHz, 48kHz, etc.) - automatically resampled to 16kHz for processing
+-  **Input Formats**: WAV, FLAC (always), MP3/AAC (if backends installed)
+-  **Bitrates**: All bitrates supported (models work on decoded waveforms)
+-  **Output Format**: WAV only (currently)
 
 **For detailed format support information, see [FORMAT_SUPPORT.md](./FORMAT_SUPPORT.md)**
 
@@ -319,7 +319,7 @@ Key dependencies (from `requirements.txt`):
 - Output is currently hardcoded to WAV format
 - Different bitrates work fine - models process raw waveforms after decoding
 
-## 🐛 Common Issues
+## Common Issues
 
 1. **Model Loading**: First request may be slow if models aren't cached
 2. **Memory**: Large audio files may cause OOM errors
@@ -327,7 +327,7 @@ Key dependencies (from `requirements.txt`):
 4. **Sample Rate**: Audio is automatically resampled to 16kHz internally (any input sample rate works)
 5. **Format Support**: MP3/AAC require additional backends (sox/ffmpeg) - see FORMAT_SUPPORT.md
 
-## 📝 Example Usage
+## Example Usage
 
 ### Watermark an audio file:
 ```bash
@@ -351,9 +351,9 @@ curl -X POST http://localhost:5001/test/pink_noise \
   -d '{"audio_url": "https://example.com/audio.wav", "noise_std": 0.1}' | jq
 ```
 
-## 🔐 Security Considerations
+## Security Considerations
 
-⚠️ **Current Implementation**:
+ **Current Implementation**:
 - No authentication/authorization
 - No rate limiting
 - Debug mode enabled
