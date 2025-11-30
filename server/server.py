@@ -18,6 +18,7 @@ import io
 import base64
 import urllib.request
 import tempfile
+from urllib.parse import urlparse
 from flask import Flask, request, jsonify, send_file
 import torch
 import torchaudio
@@ -51,9 +52,27 @@ detector = detector.to(device)
 print("Models loaded successfully!")
 
 
+def get_file_extension_from_url(url):
+    """Extract file extension from URL, or return None if not found."""
+    parsed = urlparse(url)
+    path = parsed.path
+    if '.' in path:
+        return path.split('.')[-1].lower()
+    return None
+
+
 def download_audio(url):
-    """Download audio from URL and return tensor and sample rate."""
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp_file:
+    """
+    Download audio from URL and return tensor and sample rate.
+    Supports WAV, FLAC, MP3, AAC, and other formats supported by torchaudio.
+    """
+    # Try to detect format from URL extension
+    ext = get_file_extension_from_url(url)
+    
+    # Use format-agnostic temp file (no extension) to let torchaudio auto-detect
+    # Or use detected extension if available
+    suffix = f'.{ext}' if ext else ''
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
         tmp_path = tmp_file.name
         try:
             resp = urllib.request.urlopen(url)
@@ -63,7 +82,9 @@ def download_audio(url):
             raise Exception(f"Failed to download audio from URL: {str(e)}")
     
     try:
-        wav, sample_rate = torchaudio.load(tmp_path)
+        # Let torchaudio auto-detect format (format=None)
+        # This works for WAV, FLAC, and other formats if backends are available
+        wav, sample_rate = torchaudio.load(tmp_path, format=None)
         # Convert to mono if stereo
         if wav.shape[0] > 1:
             wav = wav.mean(dim=0, keepdim=True)
@@ -71,7 +92,14 @@ def download_audio(url):
         return wav, sample_rate
     except Exception as e:
         os.unlink(tmp_path)
-        raise Exception(f"Failed to load audio file: {str(e)}")
+        # Provide helpful error message about format support
+        available_backends = torchaudio.list_audio_backends()
+        error_msg = (
+            f"Failed to load audio file: {str(e)}\n"
+            f"Available audio backends: {', '.join(available_backends) if available_backends else 'none'}\n"
+            f"Supported formats: WAV, FLAC (always). MP3/AAC require 'sox' or 'ffmpeg' backend."
+        )
+        raise Exception(error_msg)
 
 
 def plot_waveform_and_specgram(waveform, sample_rate, title):
@@ -104,9 +132,25 @@ def plot_waveform_and_specgram(waveform, sample_rate, title):
     return img_base64
 
 
-def save_audio_tensor(audio_tensor, sample_rate, output_path):
-    """Save audio tensor to file."""
-    torchaudio.save(output_path, audio_tensor, sample_rate)
+def save_audio_tensor(audio_tensor, sample_rate, output_path, format='wav'):
+    """
+    Save audio tensor to file.
+    
+    Args:
+        audio_tensor: Audio tensor to save
+        sample_rate: Sample rate of the audio
+        output_path: Path to save the file
+        format: Output format ('wav', 'flac', etc.). Defaults to 'wav'.
+    """
+    # torchaudio.save automatically detects format from extension
+    # For explicit format control, we can use the format parameter
+    if format.lower() == 'wav':
+        torchaudio.save(output_path, audio_tensor, sample_rate)
+    elif format.lower() == 'flac':
+        torchaudio.save(output_path, audio_tensor, sample_rate, format='flac')
+    else:
+        # Default to WAV if format not explicitly supported
+        torchaudio.save(output_path, audio_tensor, sample_rate)
 
 
 @app.route('/watermark', methods=['POST'])
@@ -118,7 +162,8 @@ def watermark_audio():
     {
         "audio_url": "https://example.com/audio.wav",
         "message": [0, 1, 0, 1, ...] (optional, 16 bits),
-        "alpha": 1.0 (optional, watermark strength)
+        "alpha": 1.0 (optional, watermark strength),
+        "output_format": "wav" (optional, "wav" or "flac", default: "wav")
     }
     """
     try:
@@ -129,6 +174,15 @@ def watermark_audio():
         audio_url = data['audio_url']
         message = data.get('message')
         alpha = data.get('alpha', 1.0)
+        output_format = data.get('output_format', 'wav').lower()
+        
+        # Validate output format
+        supported_formats = ['wav', 'flac']
+        if output_format not in supported_formats:
+            return jsonify({
+                'error': f'Unsupported output format: {output_format}',
+                'supported_formats': supported_formats
+            }), 400
         
         # Download and load audio
         audio, sr = download_audio(audio_url)
@@ -143,16 +197,24 @@ def watermark_audio():
         else:
             watermarked_audio = generator(audios, sample_rate=sr, alpha=alpha)
         
-        # Save watermarked audio to temporary file
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp_file:
+        # Save watermarked audio to temporary file with appropriate extension
+        suffix = f'.{output_format}'
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
             output_path = tmp_file.name
-            save_audio_tensor(watermarked_audio.squeeze(0), sr, output_path)
+            save_audio_tensor(watermarked_audio.squeeze(0), sr, output_path, format=output_format)
+        
+        # Set appropriate mimetype
+        mimetypes = {
+            'wav': 'audio/wav',
+            'flac': 'audio/flac'
+        }
+        mimetype = mimetypes.get(output_format, 'audio/wav')
         
         return send_file(
             output_path,
-            mimetype='audio/wav',
+            mimetype=mimetype,
             as_attachment=True,
-            download_name='watermarked_audio.wav'
+            download_name=f'watermarked_audio.{output_format}'
         )
     
     except Exception as e:
@@ -514,8 +576,24 @@ def test_filters():
 
 @app.route('/health', methods=['GET'])
 def health():
-    """Health check endpoint."""
-    return jsonify({'status': 'healthy', 'device': str(device)})
+    """
+    Health check endpoint.
+    Returns server status, device info, and available audio backends.
+    """
+    available_backends = torchaudio.list_audio_backends()
+    
+    # Determine supported formats based on backends
+    supported_formats = ['WAV', 'FLAC']  # Always supported with soundfile
+    if 'sox' in available_backends or 'ffmpeg' in available_backends:
+        supported_formats.extend(['MP3', 'AAC', 'M4A', 'OPUS'])
+    
+    return jsonify({
+        'status': 'healthy',
+        'device': str(device),
+        'audio_backends': available_backends,
+        'supported_input_formats': supported_formats,
+        'supported_output_formats': ['WAV', 'FLAC']
+    })
 
 
 if __name__ == '__main__':
